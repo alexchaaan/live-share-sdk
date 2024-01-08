@@ -168,57 +168,6 @@ export class MediaPlayerSynchronizer extends EventEmitter {
                     const src = this._player.currentSrc || this._player.src;
                     this._trackData = null;
                     break;
-                case "playing":
-                    // Handle case for YouTube player where user can pause/play video by clicking on it.
-                    // - Videos don't always start at 0.0 seconds.
-                    if (this._expectedPlaybackState != "playing") {
-                        if (
-                            this._mediaSession.coordinator.canPlayPause &&
-                            this._player.currentTime < 1.0
-                        ) {
-                            this._logger.sendTelemetryEvent(
-                                TelemetryEvents.MediaPlayerSynchronizer
-                                    .UserTappedVideoToPlay
-                            );
-                            this.play().catch((err) => {
-                                this._logger.sendErrorEvent(
-                                    TelemetryEvents.MediaPlayerSynchronizer
-                                        .UserTappedVideoToPlayError,
-                                    err
-                                );
-                            });
-                        }
-                    }
-                    // block play if player state is playing when expected synced state is paused and coordinator is not suspended.
-                    // needed because cannot tell if its a user initiated event, so disallow play
-                    if (
-                        this._expectedPlaybackState === "paused" &&
-                        !this._mediaSession.coordinator.isSuspended
-                    ) {
-                        this._player.pause();
-                    }
-
-                    // block play if player state is playing when expected synced state is none and coordinator is not suspended.
-                    // needed because user who is not in control should not be able to start, so disallow play
-                    if (
-                        this._expectedPlaybackState === "none" &&
-                        !this._mediaSession.coordinator.isSuspended
-                    ) {
-                        this._player.pause();
-                    }
-                    break;
-                case "pause":
-                    // block pause if player state is paused when expected synced state is playing and coordinator is not suspended.
-                    // needed because cannot tell if its a user initiated event, so disallow pause
-                    if (
-                        this._expectedPlaybackState === "playing" &&
-                        !this._mediaSession.coordinator.isSuspended &&
-                        // some players have ended, but emit a pause event immediately before ended event. Do not play if ended
-                        !this._player.ended
-                    ) {
-                        this._player.play();
-                    }
-                    break;
                 case "ratechange":
                     // Block rate changes unless suspended.
                     if (
